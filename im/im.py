@@ -183,3 +183,19 @@ def crop(input, output, x, y, width, height, overwrite):
         imwrite(Image.fromarray(image2), output[i], exf)
 
 im_cmd.add_command(crop)
+
+
+@click.command(help='Filter input images using given criterion.')
+@click.argument('input', nargs=-1)
+@click.option('--criterion', '-c', help='Images filtering criterion (python syntax, f.e.: \'w * h > 100\').')
+def filter(input, criterion):
+    for m_input in input:
+        image, exf = imread(m_input)
+        image = np.asarray(image, dtype=np.uint8)
+        shape = image.shape
+        h, w, _ = shape
+        criteria_satisfied = eval(criterion)
+        if criteria_satisfied:
+            click.echo(m_input)
+
+im_cmd.add_command(filter)

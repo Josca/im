@@ -1,9 +1,11 @@
 import os
+from functools import partial
 
 import click
 import numpy as np
 from PIL import Image, ImageOps
 import piexif
+import multiprocessing as mp
 
 
 def imread(filepath):
@@ -203,19 +205,24 @@ def filter(input, criterion):
 im_cmd.add_command(filter)
 
 
+def _convert(input: str, extension: str, overwrite: bool):
+    image, exf = imread(input)
+    image = np.asarray(image, dtype=np.uint8)
+    path_base, ext = os.path.splitext(input)
+    new_file_path = path_base + extension
+    print('%s --> %s' % (input, new_file_path))
+    imwrite(Image.fromarray(image), new_file_path, exf)
+    if overwrite:
+        os.remove(input)
+
+
 @click.command(help='Convert image to another format.')
 @click.argument('input', nargs=-1)
 @click.option('--extension', '-e', help='Required new image extension, f.e.: \'.png\'.')
 @click.option('--overwrite', '-w', help='Overwrite image (remove old one).', is_flag=True)
 def convert(input, extension, overwrite):
-    for m_input in input:
-        image, exf = imread(m_input)
-        image = np.asarray(image, dtype=np.uint8)
-        path_base, ext = os.path.splitext(m_input)
-        new_file_path = path_base + extension
-        print('%s --> %s' % (m_input, new_file_path))
-        imwrite(Image.fromarray(image), new_file_path, exf)
-        if overwrite:
-            os.remove(m_input)
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_convert, extension=extension, overwrite=overwrite), input)
+    pool.close()
 
 im_cmd.add_command(convert)

@@ -262,17 +262,17 @@ def show(input):
     display = CursesDisplay()
     dh, dw = display.size
     i_w, i_h = image.size
+    i_w *= 2                                    # Rows compensation.
     f = min((dw - 1) / i_w, (dh - 1) / i_h)
-    new_w = int(f * i_w * 2)
+    new_w = int(f * i_w)
     new_h = int(f * i_h)
     image = image.resize((new_w, new_h), Image.ANTIALIAS)
     image = image.convert('P', palette=Image.ADAPTIVE, colors=255)
     image = image.convert('RGB')
-    image = np.asarray(image, dtype=np.uint8)
-    rows, cols, channels = image.shape
-    for i_row in range(rows):
-        for i_column in range(cols):
-            r, g, b = list(image[i_row, i_column, :])
+    pxs = image.load()
+    for i_row in range(new_h):
+        for i_col in range(new_w):
+            r, g, b = pxs[i_col, i_row]
             display.print_color(r, g, b)
         display.n()
     display.finish()

@@ -7,6 +7,8 @@ from PIL import Image, ImageOps
 import piexif
 import multiprocessing as mp
 
+from im.display import CursesDisplay
+
 
 def imread(filepath):
     image = Image.open(filepath)
@@ -251,3 +253,28 @@ def gauss(input, std_dev):
     pool.close()
 
 im_cmd.add_command(gauss)
+
+
+@click.command(help='Show image.')
+@click.argument('input', nargs=1)
+def show(input):
+    image, exf = imread(input)
+    display = CursesDisplay()
+    dh, dw = display.size
+    i_w, i_h = image.size
+    f = min((dw - 1) / i_w, (dh - 1) / i_h)
+    new_w = int(f * i_w * 2)
+    new_h = int(f * i_h)
+    image = image.resize((new_w, new_h), Image.ANTIALIAS)
+    image = image.convert('P', palette=Image.ADAPTIVE, colors=255)
+    image = image.convert('RGB')
+    image = np.asarray(image, dtype=np.uint8)
+    rows, cols, channels = image.shape
+    for i_row in range(rows):
+        for i_column in range(cols):
+            r, g, b = list(image[i_row, i_column, :])
+            display.print_color(r, g, b)
+        display.n()
+    display.finish()
+
+im_cmd.add_command(show)

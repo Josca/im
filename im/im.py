@@ -211,7 +211,7 @@ def _convert(input: str, extension: str, overwrite: bool):
     path_base, ext = os.path.splitext(input)
     new_file_path = path_base + extension
     print('%s --> %s' % (input, new_file_path))
-    imwrite(Image.fromarray(image), new_file_path, exf)
+    imwrite(Image.fromarray(image), new_file_path)
     if overwrite:
         os.remove(input)
 
@@ -239,7 +239,7 @@ def _gauss(input: str, std_dev: int):
     path_base, ext = os.path.splitext(input)
     new_file_path = '%s_gauss%d%s' % (path_base, std_dev, ext)
     print('%s --> %s' % (input, new_file_path))
-    imwrite(Image.fromarray(image), new_file_path, exf)
+    imwrite(Image.fromarray(image), new_file_path)
 
 
 @click.command(help='Generate image with Gauss noise.')

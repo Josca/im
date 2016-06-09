@@ -11,7 +11,7 @@ You can resize, join (stack), rotate, convert and do more with your images witho
 
 ## Install
 * Install program as a standard Python 3 package:
-    - pip3 install setup.py
+    - pip3 install .
 
 ## Usage
 * Application is used using command line with 'im' command.

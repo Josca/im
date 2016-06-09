@@ -226,3 +226,28 @@ def convert(input, extension, overwrite):
     pool.close()
 
 im_cmd.add_command(convert)
+
+
+def _gauss(input: str, std_dev: int):
+    image, exf = imread(input)
+    image = np.asarray(image, dtype=np.uint8)
+    noise = np.random.normal(0, std_dev, image.shape)
+    image = image + noise
+    image -= image.min()
+    image /= (image.max() / 255.0)
+    image = image.astype(np.uint8)
+    path_base, ext = os.path.splitext(input)
+    new_file_path = '%s_gauss%d%s' % (path_base, std_dev, ext)
+    print('%s --> %s' % (input, new_file_path))
+    imwrite(Image.fromarray(image), new_file_path, exf)
+
+
+@click.command(help='Generate image with Gauss noise.')
+@click.argument('input', nargs=-1)
+@click.option('--std-dev', '-s', help='Standard deviation.', type=int)
+def gauss(input, std_dev):
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_gauss, std_dev=std_dev), input)
+    pool.close()
+
+im_cmd.add_command(gauss)

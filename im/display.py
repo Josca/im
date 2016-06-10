@@ -5,16 +5,20 @@ from im.utils import *
 
 class CursesDisplay:
 
-    def __init__(self):
+    def __init__(self, slideshow: bool=True, timeout: int=1):
         self.scr = curses.initscr()
         curses.start_color()
-        self.scr.keypad(0)
+        self.scr.keypad(1)
+        self.scr.nodelay(1)                                 # For non blocking getch.
+        self.timeout = timeout
+        self.scr.timeout(self.timeout * 1000)               # Set getch timeout (ms).
         curses.noecho()
         self.colors = {}
         self._old_pairs = {}
         curses.def_prog_mode()
         self.buffer = {}
         self.buffer_size = 1000
+        self.slideshow = slideshow
 
     def load_image(self, img_path):
         if img_path in self.buffer:
@@ -45,9 +49,11 @@ class CursesDisplay:
             inch = self.imshow(image, msg)
             if inch == ord('q'):
                 break
-            elif inch == ord('a'):
+            elif inch == curses.KEY_F5:
+                self.slideshow = not self.slideshow
+            elif inch == curses.KEY_LEFT:
                 i -= 1
-            elif inch == ord('d'):
+            elif inch == curses.KEY_RIGHT:
                 i += 1
             i %= len(images)
 
@@ -79,13 +85,16 @@ class CursesDisplay:
     def wait_key(self):
         while True:
             inch = self.scr.getch()
-            if inch in [ord('a'), ord('d'), ord('q')]:
+            if inch == -1 and self.slideshow:
+                inch = curses.KEY_RIGHT
+            if inch in [curses.KEY_LEFT, curses.KEY_RIGHT, curses.KEY_F5, ord('q')]:
                 return inch
 
     def imshow(self, image, msg=''):
         self._reset()
         dh, dw = self.size
-        header = 'Q - Exit | D - Next | A - Prev | %s' % msg
+        header = 'Q - Exit | <- Prev | -> Next | F5 - slideshow(%ds,%s)| %s' \
+                 % (self.timeout, 'on' if self.slideshow else 'off', msg)
         header = header[:dw - 1]
         self.scr.addstr(header, curses.color_pair(1))
         if image is not None:

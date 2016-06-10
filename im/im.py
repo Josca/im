@@ -220,8 +220,10 @@ im_cmd.add_command(gauss)
 
 @click.command(help='Show image(s) - terminal view.')
 @click.argument('images', nargs=-1)
-def show(images: list):
-    d = CursesDisplay()
+@click.option('--slideshow', '-s', help='Run as slideshow.', is_flag=True)
+@click.option('--timeout', '-t', help='Slideshow timeout (s).', type=int, default=1)
+def show(images: list, slideshow: bool, timeout: int):
+    d = CursesDisplay(slideshow, timeout)
     d.run(images)
 
 

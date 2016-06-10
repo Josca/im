@@ -46,12 +46,14 @@ class CursesDisplay:
 
     def imshow(self, image, msg=''):
         self._reset()
-        self.scr.addstr('Q - Exit | D - Next | A - Prev | %s' % msg, curses.color_pair(1))
+        dh, dw = self.size
+        header = 'Q - Exit | D - Next | A - Prev | %s' % msg
+        header = header[:dw - 1]
+        self.scr.addstr(header, curses.color_pair(1))
         if image is not None:
-            dh, dw = self.size
             i_w, i_h = image.size
             i_w *= 2  # Rows compensation.
-            f = min((dw - 2) / i_w, (dh - 1) / i_h)
+            f = min((dw - 1) / i_w, (dh - 1) / i_h)
             new_w = int(f * i_w)
             new_h = int(f * i_h)
             image = image.resize((new_w, new_h), Image.ANTIALIAS)

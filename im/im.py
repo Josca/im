@@ -263,20 +263,23 @@ def show(input):
     i = 0
     while True:
         img_path = input[i]
+        path_msg = 'Path: %s' % img_path
         try:
             image, exf = imread(img_path)
+            w, h = image.size
+            info_msg = 'Size: %d x %d' % (w, h)
         except:
-            print('Cannot read: %s!' % img_path)
             image = None
-        inch = display.imshow(image)
+            info_msg = 'Cannot load image'
+        msg = '%d/%d, %s, %s' % (i + 1, len(input), info_msg, path_msg)
+        inch = display.imshow(image, msg)
         if inch == ord('q'):
             break
         elif inch == ord('a'):
-            i += 1
-        elif inch == ord('d'):
             i -= 1
+        elif inch == ord('d'):
+            i += 1
         i %= len(input)
-        print(i)
 
 
 im_cmd.add_command(show)

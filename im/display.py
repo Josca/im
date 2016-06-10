@@ -13,6 +13,16 @@ class CursesDisplay:
         self.colors = {}
         self._old_pairs = {}
         curses.def_prog_mode()
+        self.buffer = {}
+
+    def load_image(self, img_path):
+        if img_path in self.buffer:
+            rotated, image, exf = self.buffer[img_path]
+        else:
+            image, exf = imread(img_path)
+            rotated, image, exf = try_rot_exif(image, exf)
+            self.buffer[img_path] = (rotated, image, exf)
+        return rotated, image, exf
 
     def run(self, images: list):
         i = 0
@@ -20,8 +30,7 @@ class CursesDisplay:
             img_path = images[i]
             path_msg = 'Path: %s' % img_path
             try:
-                image, exf = imread(img_path)
-                rotated, image, exf = try_rot_exif(image, exf)
+                rotated, image, exf = self.load_image(img_path)
                 w, h = image.size
                 info_msg = 'Size: %d x %d' % (w, h)
                 if rotated:

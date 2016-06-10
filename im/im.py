@@ -8,6 +8,7 @@ import piexif
 import multiprocessing as mp
 
 from im.display import CursesDisplay
+import curses
 
 
 def imread(filepath):
@@ -256,25 +257,26 @@ im_cmd.add_command(gauss)
 
 
 @click.command(help='Show image.')
-@click.argument('input', nargs=1)
+@click.argument('input', nargs=-1)
 def show(input):
-    image, exf = imread(input)
     display = CursesDisplay()
-    dh, dw = display.size
-    i_w, i_h = image.size
-    i_w *= 2                                    # Rows compensation.
-    f = min((dw - 1) / i_w, (dh - 1) / i_h)
-    new_w = int(f * i_w)
-    new_h = int(f * i_h)
-    image = image.resize((new_w, new_h), Image.ANTIALIAS)
-    image = image.convert('P', palette=Image.ADAPTIVE, colors=255)
-    image = image.convert('RGB')
-    pxs = image.load()
-    for i_row in range(new_h):
-        for i_col in range(new_w):
-            r, g, b = pxs[i_col, i_row]
-            display.print_color(r, g, b)
-        display.new_line()
-    display.finish()
+    i = 0
+    while True:
+        img_path = input[i]
+        try:
+            image, exf = imread(img_path)
+        except:
+            print('Cannot read: %s!' % img_path)
+            image = None
+        inch = display.imshow(image)
+        if inch == ord('q'):
+            break
+        elif inch == ord('a'):
+            i += 1
+        elif inch == ord('d'):
+            i -= 1
+        i %= len(input)
+        print(i)
+
 
 im_cmd.add_command(show)

@@ -1,4 +1,6 @@
 import curses
+from PIL import Image
+import time
 
 
 class CursesDisplay:
@@ -26,13 +28,41 @@ class CursesDisplay:
         for i_color, (fg, bg) in self._old_pairs.items():       # Reset pairs - logic but without effect currently.
             curses.init_pair(i_color, bg, fg)
 
+    def wait_key(self):
+        while True:
+            inch = self.scr.getch()
+            if inch in [ord('a'), ord('d'), ord('q')]:
+                return inch
+
+    def imshow(self, image):
+        self.scr.clear()
+        self.colors.clear()
+        if image is not None:
+            dh, dw = self.size
+            i_w, i_h = image.size
+            i_w *= 2  # Rows compensation.
+            f = min((dw - 1) / i_w, (dh - 1) / i_h)
+            new_w = int(f * i_w)
+            new_h = int(f * i_h)
+            image = image.resize((new_w, new_h), Image.ANTIALIAS)
+            image = image.convert('P', palette=Image.ADAPTIVE, colors=255)
+            image = image.convert('RGB')
+            pxs = image.load()
+            for i_row in range(new_h):
+                for i_col in range(new_w):
+                    r, g, b = pxs[i_col, i_row]
+                    self.print_color(r, g, b)
+                self.new_line()
+        inch = self.finish()
+        return inch
+
     def finish(self):
         curses.use_default_colors()
-        self.scr.getch()
+        inch = self.wait_key()
         self.reset_original_scheme()
         self.scr.refresh()
         curses.endwin()
-        curses.reset_shell_mode()
+        return inch
 
     def print_color(self, r: int, g: int, b: int, s=' '):
         key = (r, g, b)

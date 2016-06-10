@@ -8,7 +8,6 @@ import piexif
 import multiprocessing as mp
 
 from im.display import CursesDisplay
-import curses
 
 
 def imread(filepath):
@@ -135,6 +134,28 @@ def exif(input, remove, show):
 im_cmd.add_command(exif)
 
 
+def _try_rot_exif(image, exf):
+    ret_exf, ret_img = exf, image
+    rotated = False
+    if exf:
+        orientation_flag = exf['0th'][piexif.ImageIFD.Orientation]
+        ret_exf['0th'][piexif.ImageIFD.Orientation] = 1
+        if orientation_flag == 3:
+            k = 2
+        elif orientation_flag == 6:
+            k = -1
+        elif orientation_flag == 8:
+            k = 1
+        else:
+            k = 0
+        if k != 0:
+            rotated = True
+        mat = np.asarray(image, dtype=np.uint8)
+        mat2 = np.rot90(mat, k)
+        ret_img = Image.fromarray(mat2)
+    return rotated, ret_img, ret_exf
+
+
 @click.command(help='Rotate image according to exif orientation\
  info or by 90 degrees in the counter-clockwise direction.')
 @click.argument('input', nargs=-1)
@@ -149,21 +170,8 @@ def rotate(input, output, overwrite, k):
     for i, m_input in enumerate(input):
         print(m_input, ' --> ', output[i], ' rotating ...')
         image, exf = imread(m_input)
-        if exf:
-            orientation_flag = exf['0th'][piexif.ImageIFD.Orientation]
-            exf['0th'][piexif.ImageIFD.Orientation] = 1
-            if not k:
-                if orientation_flag == 3:
-                    k = 2
-                elif orientation_flag == 6:
-                    k = -1
-                elif orientation_flag == 8:
-                    k = 1
-                else:
-                    k = 0
-        mat = np.asarray(image, dtype=np.uint8)
-        mat2 = np.rot90(mat, k)
-        imwrite(Image.fromarray(mat2), output[i], exf)
+        _, image, exf = _try_rot_exif(image, exf)
+        imwrite(image, output[i], exf)
 
 im_cmd.add_command(rotate)
 
@@ -256,7 +264,7 @@ def gauss(input, std_dev):
 im_cmd.add_command(gauss)
 
 
-@click.command(help='Show image.')
+@click.command(help='Show image(s) - terminal view.')
 @click.argument('input', nargs=-1)
 def show(input):
     display = CursesDisplay()
@@ -266,8 +274,11 @@ def show(input):
         path_msg = 'Path: %s' % img_path
         try:
             image, exf = imread(img_path)
+            rotated, image, exf = _try_rot_exif(image, exf)
             w, h = image.size
             info_msg = 'Size: %d x %d' % (w, h)
+            if rotated:
+                info_msg = '%s, (autorotated)' % info_msg
         except:
             image = None
             info_msg = 'Cannot load image'

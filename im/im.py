@@ -2,35 +2,11 @@ import os
 from functools import partial
 
 import click
-import numpy as np
-from PIL import Image, ImageOps
-import piexif
+from PIL import ImageOps
 import multiprocessing as mp
 
 from im.display import CursesDisplay
-
-
-def imread(filepath):
-    image = Image.open(filepath)
-    try:
-        exf = piexif.load(image.info['exif'])
-    except:
-        exf = None
-    return image, exf
-
-
-def imwrite(image, filename, exif=None):
-    if exif:
-        image.save(filename, exif=piexif.dump(exif))
-    else:
-        image.save(filename)
-
-
-def append_postfix(filename, postfix):
-    arr = filename.split('.')
-    arr[-2] = arr[-2] + postfix
-    result = '.'.join(arr)
-    return result
+from im.utils import *
 
 
 @click.group(help='Image manipulation tool.')
@@ -134,28 +110,6 @@ def exif(input, remove, show):
 im_cmd.add_command(exif)
 
 
-def _try_rot_exif(image, exf):
-    ret_exf, ret_img = exf, image
-    rotated = False
-    if exf:
-        orientation_flag = exf['0th'][piexif.ImageIFD.Orientation]
-        ret_exf['0th'][piexif.ImageIFD.Orientation] = 1
-        if orientation_flag == 3:
-            k = 2
-        elif orientation_flag == 6:
-            k = -1
-        elif orientation_flag == 8:
-            k = 1
-        else:
-            k = 0
-        if k != 0:
-            rotated = True
-        mat = np.asarray(image, dtype=np.uint8)
-        mat2 = np.rot90(mat, k)
-        ret_img = Image.fromarray(mat2)
-    return rotated, ret_img, ret_exf
-
-
 @click.command(help='Rotate image according to exif orientation\
  info or by 90 degrees in the counter-clockwise direction.')
 @click.argument('input', nargs=-1)
@@ -170,7 +124,7 @@ def rotate(input, output, overwrite, k):
     for i, m_input in enumerate(input):
         print(m_input, ' --> ', output[i], ' rotating ...')
         image, exf = imread(m_input)
-        _, image, exf = _try_rot_exif(image, exf)
+        _, image, exf = try_rot_exif(image, exf)
         imwrite(image, output[i], exf)
 
 im_cmd.add_command(rotate)
@@ -265,32 +219,10 @@ im_cmd.add_command(gauss)
 
 
 @click.command(help='Show image(s) - terminal view.')
-@click.argument('input', nargs=-1)
-def show(input):
-    display = CursesDisplay()
-    i = 0
-    while True:
-        img_path = input[i]
-        path_msg = 'Path: %s' % img_path
-        try:
-            image, exf = imread(img_path)
-            rotated, image, exf = _try_rot_exif(image, exf)
-            w, h = image.size
-            info_msg = 'Size: %d x %d' % (w, h)
-            if rotated:
-                info_msg = '%s, (autorotated)' % info_msg
-        except:
-            image = None
-            info_msg = 'Cannot load image'
-        msg = '%d/%d, %s, %s' % (i + 1, len(input), info_msg, path_msg)
-        inch = display.imshow(image, msg)
-        if inch == ord('q'):
-            break
-        elif inch == ord('a'):
-            i -= 1
-        elif inch == ord('d'):
-            i += 1
-        i %= len(input)
+@click.argument('images', nargs=-1)
+def show(images: list):
+    d = CursesDisplay()
+    d.run(images)
 
 
 im_cmd.add_command(show)

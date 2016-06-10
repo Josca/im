@@ -1,5 +1,6 @@
 import curses
-from PIL import Image
+
+from im.utils import *
 
 
 class CursesDisplay:
@@ -12,6 +13,31 @@ class CursesDisplay:
         self.colors = {}
         self._old_pairs = {}
         curses.def_prog_mode()
+
+    def run(self, images: list):
+        i = 0
+        while True:
+            img_path = images[i]
+            path_msg = 'Path: %s' % img_path
+            try:
+                image, exf = imread(img_path)
+                rotated, image, exf = try_rot_exif(image, exf)
+                w, h = image.size
+                info_msg = 'Size: %d x %d' % (w, h)
+                if rotated:
+                    info_msg = '%s, (autorotated)' % info_msg
+            except:
+                image = None
+                info_msg = 'Cannot load image'
+            msg = '%d/%d, %s, %s' % (i + 1, len(images), info_msg, path_msg)
+            inch = self.imshow(image, msg)
+            if inch == ord('q'):
+                break
+            elif inch == ord('a'):
+                i -= 1
+            elif inch == ord('d'):
+                i += 1
+            i %= len(images)
 
     def _init_text_style(self):
         self._define_color(1, r=0, g=0, b=0)

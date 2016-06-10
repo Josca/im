@@ -14,17 +14,14 @@ class CursesDisplay:
     def size(self):
         return self.scr.getmaxyx()
 
-    def n(self):
-        key, _ = self.colors.popitem()          # Use defined color.
-        r, g, b = key
-        self.print_color(r, g, b, '\n')
+    def new_line(self):
+        self.scr.addstr('\n', curses.color_pair(1))
 
     def finish(self):
-        curses.use_default_colors()
         self.scr.refresh()
         self.scr.getch()
 
-    def print_color(self, r, g, b, s=' '):
+    def print_color(self, r: int, g: int, b: int, s=' '):
         key = (r, g, b)
         if key not in self.colors:
             i_color_pair = 1 + len(self.colors)

@@ -274,7 +274,7 @@ def show(input):
         for i_col in range(new_w):
             r, g, b = pxs[i_col, i_row]
             display.print_color(r, g, b)
-        display.n()
+        display.new_line()
     display.finish()
 
 im_cmd.add_command(show)

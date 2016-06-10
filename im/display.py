@@ -14,6 +14,7 @@ class CursesDisplay:
         self._old_pairs = {}
         curses.def_prog_mode()
         self.buffer = {}
+        self.buffer_size = 1000
 
     def load_image(self, img_path):
         if img_path in self.buffer:
@@ -22,6 +23,8 @@ class CursesDisplay:
             image, exf = imread(img_path)
             rotated, image, exf = try_rot_exif(image, exf)
             self.buffer[img_path] = (rotated, image, exf)
+        if len(self.buffer) >= self.buffer_size:
+            self.buffer.clear()
         return rotated, image, exf
 
     def run(self, images: list):

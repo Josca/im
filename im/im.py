@@ -171,14 +171,17 @@ im_cmd.add_command(filter)
 
 
 def _convert(input: str, extension: str, overwrite: bool):
-    image, exf = imread(input)
-    image = np.asarray(image, dtype=np.uint8)
-    path_base, ext = os.path.splitext(input)
-    new_file_path = path_base + extension
-    print('%s --> %s' % (input, new_file_path))
-    imwrite(Image.fromarray(image), new_file_path)
-    if overwrite:
-        os.remove(input)
+    try:
+        image, exf = imread(input)
+        image = np.asarray(image, dtype=np.uint8)
+        path_base, ext = os.path.splitext(input)
+        new_file_path = path_base + extension
+        print('%s --> %s' % (input, new_file_path))
+        imwrite(Image.fromarray(image), new_file_path)
+        if overwrite:
+            os.remove(input)
+    except Exception as e:
+        print('Error conversion %s:' % input, e)
 
 
 @click.command(help='Convert image to another format.')

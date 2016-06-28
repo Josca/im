@@ -259,3 +259,26 @@ def find_ext(srcs: str, append=bool):
 
 
 im_cmd.add_command(find_ext)
+
+
+def _find_noim(src: str, delete: bool):
+    try:
+        img, _ = imread(src)
+    except Exception as e:
+        if delete:
+            os.remove(src)
+            print('Removing %s' % src)
+        else:
+            print('Image %s: %s' % (src, e))
+
+
+@click.command(help='Find non-image files.')
+@click.argument('srcs', nargs=-1)
+@click.option('--delete', '-d', help='Delete found non-image files.', is_flag=True)
+def find_noim(srcs: str, delete=bool):
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_find_noim, delete=delete), srcs)
+    pool.close()
+
+
+im_cmd.add_command(find_noim)

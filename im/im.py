@@ -1,5 +1,6 @@
 import os
 from functools import partial
+import shutil
 
 import click
 from PIL import ImageOps
@@ -231,3 +232,30 @@ def show(images: list, slideshow: bool, timeout: int):
 
 
 im_cmd.add_command(show)
+
+
+def _find_ext(src: str, append: bool):
+    try:
+        img, _ = imread(src)
+        fmt = img.format
+        if append:
+            ext = 'jpg' if fmt == 'JPEG' else fmt.lower()  # Use jpg extension, not jpeg.
+            dst = '%s.%s' % (src, ext)
+            shutil.move(src, dst)
+            print('%s --> %s' % (src, dst))
+        else:
+            print('%s format: %s' % fmt)
+    except Exception as e:
+        print('Image %s: %s' % (src, e))
+
+
+@click.command(help='Find correct image extension.')
+@click.argument('srcs', nargs=-1)
+@click.option('--append', '-a', help='Append recognized format extension to file name.', is_flag=True)
+def find_ext(srcs: str, append=bool):
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_find_ext, append=append), srcs)
+    pool.close()
+
+
+im_cmd.add_command(find_ext)

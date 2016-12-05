@@ -7,6 +7,9 @@ setup(
     author_email='pepa.hak@gmail.com',
     version='1.0',
     packages=['im'],
+    url='https://github.com/Josca/im',
+    download_url='https://github.com/Josca/im/tarball/1.0',
+    keywords=['image', 'viewer', 'crop', 'convert'],
     install_requires=[
         'Click>=6.6',
         'numpy>=1.11.1',

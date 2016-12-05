@@ -3,6 +3,8 @@ from setuptools import setup
 setup(
     name='im',
     description='Fast and simple console image processing tool.',
+    author='hakjosef',
+    author_email='pepa.hak@gmail.com',
     version='1.0',
     packages=['im'],
     install_requires=[

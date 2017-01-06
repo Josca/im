@@ -251,7 +251,7 @@ def _find_ext(src: str, append: bool):
 
 @click.command(help='Find correct image extension.')
 @click.argument('srcs', nargs=-1)
-@click.option('--append', '-a', help='Append recognized format extension to file name.', is_flag=True)
+@click.argument('input', nargs=-1)
 def find_ext(srcs: str, append=bool):
     pool = mp.Pool(mp.cpu_count())
     pool.map(partial(_find_ext, append=append), srcs)
@@ -282,3 +282,15 @@ def find_noim(srcs: str, delete=bool):
 
 
 im_cmd.add_command(find_noim)
+
+
+@click.command(help='Evaluate common code over image.')
+@click.argument('input', nargs=-1)
+@click.option('-c', '--code', help='Custom code, f.e.: \'print(image.size)\'.', type=str, default='print(image.size)')
+def ev(input, code: str):
+    for i, m_input in enumerate(input):
+        image, exf = imread(m_input)
+        eval(code)
+
+
+im_cmd.add_command(ev)

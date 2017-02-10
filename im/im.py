@@ -294,3 +294,25 @@ def ev(input, code: str):
 
 
 im_cmd.add_command(ev)
+
+
+def _border(src: str, width: int, color: str):
+    image, exf = imread(src)
+    image = ImageOps.expand(image, border=width, fill=color)
+    path_base, ext = os.path.splitext(src)
+    new_file_path = '%s_border%s' % (path_base, ext)
+    print('%s --> %s' % (src, new_file_path))
+    imwrite(image, new_file_path, exf)
+
+
+@click.command(help='Add border to image.')
+@click.argument('srcs', nargs=-1)
+@click.option('--width', '-w', help='Border width.', type=int, default=1)
+@click.option('--color', '-c', help='Border color.', type=str, default='white')
+def border(srcs: str, width: int, color: str):
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_border, width=width, color=color), srcs)
+    pool.close()
+
+
+im_cmd.add_command(border)

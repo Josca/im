@@ -1,7 +1,7 @@
 # IM: Simple Command Line Image Manipulation Tool
 IM is easy-to-use fast image manipulation command line tool. It enables both single and __batch__ image processing.
 
-![](https://dl.dropboxusercontent.com/u/23207415/im/im_show.gif)
+![](im.gif)
 
 * [Install](#install)
 * [Usage](#usage)

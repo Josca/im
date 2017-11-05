@@ -30,6 +30,7 @@ def gray(input, output, overwrite):
         image_gray = ImageOps.grayscale(image)
         imwrite(image_gray, output[i], exf)
 
+
 im_cmd.add_command(gray)
 
 
@@ -63,6 +64,7 @@ def stack(input, output, horizontal):
     stacked_img = np.concatenate(tuple(ims), i_axis)
     imwrite(Image.fromarray(stacked_img), output)
 
+
 im_cmd.add_command(stack)
 
 
@@ -89,24 +91,33 @@ def resize(input, output, overwrite, size, width, height):
             image2 = image.resize((int(f * w), int(f * h)))
         imwrite(image2, output[i], exf)
 
+
 im_cmd.add_command(resize)
+
+
+def _remove_exif(m_input: str):
+    image, exf = imread(m_input)
+    print(m_input, ' removing exif.')
+    _, image, exf = try_rot_exif(image, exf)
+    imwrite(image, m_input)
 
 
 @click.command(help='Exif manipulation command.')
 @click.argument('input', nargs=-1)
 @click.option('--remove', '-r', help='Remove exif info from image.', is_flag=True)
-@click.option('--show', '-s', help='Show image exif info.', is_flag=True)
-def exif(input, remove, show):
-    for i, m_input in enumerate(input):
-        image, exf = imread(m_input)
-        if show:
+def exif(input, remove):
+    if not remove:
+        for i, m_input in enumerate(input):
+            image, exf = imread(m_input)
             print('Image: %s' % m_input)
             for ifd in ['0th', '1st']:
                 for tag in exf[ifd]:
                     print(piexif.TAGS[ifd][tag]['name'], exf[ifd][tag])
-            print()
-        if remove:
-            imwrite(image, m_input)
+    else:
+        pool = mp.Pool(mp.cpu_count())
+        pool.map(_remove_exif, input)
+        pool.close()
+
 
 im_cmd.add_command(exif)
 
@@ -127,6 +138,7 @@ def rotate(input, output, overwrite, k):
         image, exf = imread(m_input)
         _, image, exf = try_rot_exif(image, exf)
         imwrite(image, output[i], exf)
+
 
 im_cmd.add_command(rotate)
 
@@ -152,6 +164,7 @@ def crop(input, output, x, y, width, height, overwrite):
         image2 = image[y:y+height, x:x+width, :]
         imwrite(Image.fromarray(image2), output[i], exf)
 
+
 im_cmd.add_command(crop)
 
 
@@ -167,6 +180,7 @@ def filter(input, criterion):
         criteria_satisfied = eval(criterion)
         if criteria_satisfied:
             click.echo(m_input)
+
 
 im_cmd.add_command(filter)
 
@@ -194,6 +208,7 @@ def convert(input, extension, overwrite):
     pool.map(partial(_convert, extension=extension, overwrite=overwrite), input)
     pool.close()
 
+
 im_cmd.add_command(convert)
 
 
@@ -218,6 +233,7 @@ def gauss(input, std_dev):
     pool = mp.Pool(mp.cpu_count())
     pool.map(partial(_gauss, std_dev=std_dev), input)
     pool.close()
+
 
 im_cmd.add_command(gauss)
 

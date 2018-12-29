@@ -1,6 +1,8 @@
 import os
 from functools import partial
 import shutil
+import sys
+import traceback
 
 import click
 from PIL import ImageOps
@@ -135,9 +137,12 @@ def rotate(input, output, overwrite, k):
         output = input
     for i, m_input in enumerate(input):
         print(m_input, ' --> ', output[i], ' rotating ...')
-        image, exf = imread(m_input)
-        _, image, exf = try_rot_exif(image, exf)
-        imwrite(image, output[i], exf)
+        try:
+            image, exf = imread(m_input)
+            _, image, exf = try_rot_exif(image, exf)
+            imwrite(image, output[i], exf)
+        except BaseException:
+            traceback.print_exception(*sys.exc_info())
 
 
 im_cmd.add_command(rotate)

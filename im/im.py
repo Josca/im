@@ -337,3 +337,29 @@ def border(srcs: str, width: int, color: str):
 
 
 im_cmd.add_command(border)
+
+
+def _optimize(src: str, overwrite: bool):
+    image, exf = imread(src)
+    orig_size = os.stat(src).st_size
+    path_base, ext = os.path.splitext(src)
+    if overwrite:
+        new_file_path = src
+    else:
+        new_file_path = '%s_optimized%s' % (path_base, ext)
+    print('%s --> %s' % (src, new_file_path))
+    imwrite(image, new_file_path, exf)
+    new_size = os.stat(new_file_path).st_size
+    print("orig size: %f, new size %f, optimization: %.1f" % (orig_size, new_size, 100.0 * (orig_size - new_size) / orig_size))
+
+
+@click.command(help='Optimize JPG compression.')
+@click.argument('srcs', nargs=-1)
+@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
+def optimize(srcs: str, overwrite: bool):
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_optimize, overwrite=overwrite), srcs)
+    pool.close()
+
+
+im_cmd.add_command(optimize)

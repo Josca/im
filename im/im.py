@@ -3,6 +3,7 @@ from functools import partial
 import shutil
 import sys
 import traceback
+from datetime import datetime
 
 import click
 from PIL import ImageOps
@@ -142,6 +143,7 @@ def rotate(input, output, overwrite, k):
             _, image, exf = try_rot_exif(image, exf)
             imwrite(image, output[i], exf)
         except BaseException:
+            print('Error processing image %s:', m_input)
             traceback.print_exception(*sys.exc_info())
 
 
@@ -363,3 +365,40 @@ def optimize(srcs: str, overwrite: bool):
 
 
 im_cmd.add_command(optimize)
+
+
+def _rename(src: str, pattern: str, overwrite: bool):
+    try:
+        image, exf = imread(src)
+        path_base, ext = os.path.splitext(src)
+        path_arr = path_base.split(os.sep)
+        filename = path_arr[-1]
+        pth = os.path.join(*path_arr[:-1])
+        strdatetime = exf['0th'][piexif.ImageIFD.DateTime].decode('utf-8')
+
+        dt = datetime.strptime(strdatetime, "%Y:%m:%d %H:%M:%S")
+
+        new_file_name = dt.strftime(pattern)
+        new_file_name = new_file_name.replace('ORIG_NAME', filename)
+        new_file_path = os.path.join(pth, new_file_name)
+        print('%s --> %s' % (src, new_file_path))
+        if overwrite:
+            os.rename(src, new_file_path)
+        else:
+            shutil.copyfile(src, new_file_path)
+    except:
+        print('Error processing image %s:', src)
+        traceback.print_exception(*sys.exc_info())
+
+
+@click.command(help='Rename image using pattern. You can use timestamp pattern and original name.')
+@click.argument('srcs', nargs=-1)
+@click.option('--pattern', '-p', help='Rename pattern (e.g.: %Y_%m_%dT%H_%M_%S-ORIG_NAME.JPG.', type=str)
+@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
+def rename(srcs: str, pattern: str, overwrite: bool):
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(partial(_rename, pattern=pattern, overwrite=overwrite), srcs)
+    pool.close()
+
+
+im_cmd.add_command(rename)

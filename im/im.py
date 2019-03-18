@@ -28,7 +28,7 @@ def gray(input, output, overwrite):
     if overwrite:
         output = input
     for i, m_input in enumerate(input):
-        print(m_input, ' --> ', output[i], ' graying ...')
+        print(m_input, '-->', output[i], 'graying ...')
         image, exf = imread(m_input)
         image_gray = ImageOps.grayscale(image)
         imwrite(image_gray, output[i], exf)
@@ -64,6 +64,7 @@ def stack(input, output, horizontal):
             new_shape_list[i_axis] = ims[i_max].shape[i_shape]
             img = img.resize(tuple(new_shape_list))
             ims[i] = np.asarray(img, dtype=np.uint8)
+    print(', '.join(input), '-->', output, 'joining ...')
     stacked_img = np.concatenate(tuple(ims), i_axis)
     imwrite(Image.fromarray(stacked_img), output)
 
@@ -84,7 +85,7 @@ def resize(input, output, overwrite, size, width, height):
     if overwrite:
         output = input
     for i, m_input in enumerate(input):
-        print(m_input, ' --> ', output[i], ' resizing ...')
+        print(m_input, '-->', output[i], 'resizing ...')
         image, exf = imread(m_input)
         if width > 0:
             image2 = image.resize((width, height))
@@ -137,7 +138,7 @@ def rotate(input, output, overwrite, k):
     if overwrite:
         output = input
     for i, m_input in enumerate(input):
-        print(m_input, ' --> ', output[i], ' rotating ...')
+        print(m_input, '-->', output[i], 'rotating ...')
         try:
             image, exf = imread(m_input)
             _, image, exf = try_rot_exif(image, exf)
@@ -165,7 +166,7 @@ def crop(input, output, x, y, width, height, overwrite):
         output = input
     print(output)
     for i, m_input in enumerate(input):
-        print(m_input, ' --> ', output[i], ' croping ...')
+        print(m_input, '-->', output[i], 'croping ...')
         image, exf = imread(m_input)
         image = np.asarray(image, dtype=np.uint8)
         image2 = image[y:y+height, x:x+width, :]
@@ -341,6 +342,10 @@ def border(srcs: str, width: int, color: str):
 im_cmd.add_command(border)
 
 
+def bytes2megabytes(bytes) -> float:
+    return bytes / float(1 << 20)
+
+
 def _optimize(src: str, overwrite: bool):
     image, exf = imread(src)
     orig_size = os.stat(src).st_size
@@ -352,7 +357,8 @@ def _optimize(src: str, overwrite: bool):
     print('%s --> %s' % (src, new_file_path))
     imwrite(image, new_file_path, exf)
     new_size = os.stat(new_file_path).st_size
-    print("orig size: %f, new size %f, optimization: %.1f" % (orig_size, new_size, 100.0 * (orig_size - new_size) / orig_size))
+    print("%.1f MB --> %.1f MB (optimization: %.1f %%)"
+          % (bytes2megabytes(orig_size), bytes2megabytes(new_size), 100.0 * (orig_size - new_size) / orig_size))
 
 
 @click.command(help='Optimize JPG compression.')

@@ -3,12 +3,11 @@ from setuptools import setup
 setup(
     name='im',
     description='Fast and simple console image processing tool.',
-    author='hakjosef',
+    author='Josef Hák',
     author_email='pepa.hak@gmail.com',
-    version='1.0',
+    version='1.0.1',
     packages=['im'],
     url='https://github.com/Josca/im',
-    download_url='https://github.com/Josca/im/tarball/1.0',
     keywords=['image', 'viewer', 'crop', 'convert'],
     install_requires=[
         'Click>=6.6',

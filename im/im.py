@@ -113,10 +113,12 @@ def exif(input, remove):
     if not remove:
         for i, m_input in enumerate(input):
             image, exf = imread(m_input)
-            print('Image: %s' % m_input)
-            for ifd in ['0th', '1st']:
-                for tag in exf[ifd]:
-                    print(piexif.TAGS[ifd][tag]['name'], exf[ifd][tag])
+            for id, desc in piexif.TAGS['Exif'].items():
+                if desc['name'] == 'MakerNote':  # exclude this long value
+                    continue
+                if id in exf['Exif']:
+                    print(f"{desc['name']}: {exf['Exif'][id]}")
+
     else:
         pool = mp.Pool(mp.cpu_count())
         pool.map(_remove_exif, input)
@@ -380,8 +382,10 @@ def _rename(src: str, pattern: str, overwrite: bool):
         path_arr = path_base.split(os.sep)
         filename = path_arr[-1]
         pth = os.path.join(*path_arr[:-1])
-        strdatetime = exf['0th'][piexif.ImageIFD.DateTime].decode('utf-8')
-
+        if 'Exif' in exf:
+            strdatetime = exf['Exif'][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
+        else:
+            strdatetime = exf['0th'][piexif.ImageIFD.DateTime].decode('utf-8')
         dt = datetime.strptime(strdatetime, "%Y:%m:%d %H:%M:%S")
 
         new_file_name = dt.strftime(pattern)

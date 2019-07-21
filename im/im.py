@@ -106,11 +106,32 @@ def _remove_exif(m_input: str):
     imwrite(image, m_input)
 
 
+def _add_image_description(src: str, comment: str, overwrite: bool):
+    image, exf = imread(src)
+    exf["0th"][piexif.ImageIFD.ImageDescription] = comment.encode()
+    if overwrite:
+        out_file = src
+    else:
+        path_base, ext = os.path.splitext(src)
+        out_file = '%s_commented%s' % (path_base, ext)
+    print(src, '-->', out_file, 'adding comment ...')
+    imwrite(image, out_file, exf)
+
+
 @click.command(help='Exif manipulation command.')
 @click.argument('input', nargs=-1)
 @click.option('--remove', '-r', help='Remove exif info from image.', is_flag=True)
-def exif(input, remove):
-    if not remove:
+@click.option('--comment', '-c', help='Comment.', type=str, default=None)
+@click.option('--overwrite', help='Overwrite input images.', is_flag=True)
+def exif(input, remove, comment, overwrite):
+    if remove:
+        pool = mp.Pool(mp.cpu_count())
+        pool.map(_remove_exif, input)
+        pool.close()
+    elif comment is not None:
+        with mp.Pool(mp.cpu_count()) as pool:
+            pool.map(partial(_add_image_description, comment=comment, overwrite=overwrite), input)
+    else:
         for i, m_input in enumerate(input):
             image, exf = imread(m_input)
             for id, desc in piexif.TAGS['Exif'].items():
@@ -118,11 +139,9 @@ def exif(input, remove):
                     continue
                 if id in exf['Exif']:
                     print(f"{desc['name']}: {exf['Exif'][id]}")
-
-    else:
-        pool = mp.Pool(mp.cpu_count())
-        pool.map(_remove_exif, input)
-        pool.close()
+            for id, desc in piexif.TAGS['Image'].items():
+                if id in exf['0th']:
+                    print(f"{desc['name']}: {exf['0th'][id]}")
 
 
 im_cmd.add_command(exif)

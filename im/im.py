@@ -4,8 +4,8 @@ import shutil
 import sys
 import traceback
 from datetime import datetime
+import argparse
 
-import click
 from PIL import ImageOps
 import multiprocessing as mp
 
@@ -13,44 +13,157 @@ from im.display import CursesDisplay
 from im.utils import *
 
 
-@click.group(help='Image manipulation tool.')
 def im_cmd():
-    pass
+    parser = argparse.ArgumentParser(description='Image manipulation tool.')
+    subparsers = parser.add_subparsers()
 
+    parser_gray = subparsers.add_parser('gray', description='Convert image to grayscale.',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_gray.set_defaults(func=gray)
+    parser_gray.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_gray.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
-@click.command(help='Convert image to grayscale.')
-@click.argument('input', nargs=-1)
-@click.option('--output', '-o', help='Path to output image.', multiple=True, default=None)
-@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
-def gray(input, output, overwrite):
-    if not output:
-        output = [append_postfix(m, '_gray') for m in input]
-    if overwrite:
-        output = input
-    for i, m_input in enumerate(input):
-        print(m_input, '-->', output[i], 'graying ...')
-        image, exf = imread(m_input)
-        image_gray = ImageOps.grayscale(image)
-        imwrite(image_gray, output[i], exf)
+    parser_stack = subparsers.add_parser('stack', description='Join images horizontally or vertically.',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_stack.set_defaults(func=stack)
+    parser_stack.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_stack.add_argument('--vertical', '-v', help='Join images vertically.', action='store_true')
+    parser_stack.add_argument('--output', '-o', help='Path to output image.', default=None)
 
+    parser_resize = subparsers.add_parser('resize', description='Resize image to inserted size (higher dimension).',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_resize.set_defaults(func=resize)
+    parser_resize.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_resize.add_argument('--size', '-s', help='Higher dimension output size.', type=int, default=1000)
+    parser_resize.add_argument('--width', '-wi', help='Width.', type=int, default=0)
+    parser_resize.add_argument('--height', '-he', help='Height.', type=int, default=0)
+    parser_resize.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
-im_cmd.add_command(gray)
+    parser_exif = subparsers.add_parser('exif', description='Exif manipulation command.',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_exif.set_defaults(func=exif)
+    parser_exif.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_exif.add_argument('--remove', '-r', help='Remove exif info from image.', action='store_true')
+    parser_exif.add_argument('--comment', '-c', help='Comment.', type=str, default=None)
+    parser_exif.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
+    parser_rotate = subparsers.add_parser('rotate', description='Rotate image according to exif data',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_rotate.set_defaults(func=rotate)
+    parser_rotate.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_rotate.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
-@click.command(help='Join inserted images vertically (default) or horizontally.')
-@click.argument('input', nargs=-1)
-@click.option('--output', '-o', help='Path to output image.', default=None)
-@click.option('--horizontal', '-h', help='Join images horizontally.', is_flag=True)
-def stack(input, output, horizontal):
-    if not output:
-        output = '-'.join(input)
-    ims = [np.asarray(imread(im)[0], dtype=np.uint8) for im in input]
-    if horizontal:
-        i_shape = 0
-        i_axis = 1
+    parser_crop = subparsers.add_parser('crop', description='Crop image using [x, y, width, height] window.',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_crop.set_defaults(func=crop)
+    parser_crop.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_crop.add_argument('--x', '-x', help='Upper left crop window corner x coordinate.', type=int, default=0)
+    parser_crop.add_argument('--y', '-y', help='Upper left crop window corner y coordinate.', type=int, default=0)
+    parser_crop.add_argument('--width', '-wi', help='Crop window width.', type=int)
+    parser_crop.add_argument('--height', '-he', help='Crop window height.', type=int)
+    parser_crop.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    parser_filter = subparsers.add_parser('filter', description='Filter input images using given criterion.',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_filter.set_defaults(func=filter)
+    parser_filter.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_filter.add_argument('--criterion', '-c', help='''Images filtering criterion. Python expression returning
+                               bool value''', default='w * h > 100')
+
+    parser_convert = subparsers.add_parser('convert', description='Convert image to another format.',
+                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_convert.set_defaults(func=convert)
+    parser_convert.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_convert.add_argument('--extension', '-e', help='Required new image extension', default='.png')
+    parser_convert.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    parser_gauss = subparsers.add_parser('gauss', description='Generate image with Gauss noise.',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_gauss.set_defaults(func=gauss)
+    parser_gauss.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_gauss.add_argument('--std-dev', '-s', help='Standard deviation.', type=int)
+    parser_gauss.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    parser_show = subparsers.add_parser('show', description='Show image(s) - terminal view.',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_show.set_defaults(func=show)
+    parser_show.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_show.add_argument('--slideshow', '-s', help='Run as slideshow.', action='store_true')
+    parser_show.add_argument('--timeout', '-t', help='Slideshow timeout (s).', type=int, default=1)
+
+    parser_findext = subparsers.add_parser('findext', description='Find correct image extension.',
+                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_findext.set_defaults(func=find_ext)
+    parser_findext.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_findext.add_argument('--append', '-a', help='Append extension to file.', action='store_true')
+
+    parser_find_no_img = subparsers.add_parser('find_noim', description='''Find non-image files and (optionally)
+                                               remove it.''',
+                                               formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_find_no_img.set_defaults(func=find_noim)
+    parser_find_no_img.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_find_no_img.add_argument('--delete', '-d', help='Delete found non-image files.', action='store_true')
+
+    parser_ev = subparsers.add_parser('ev', description='Evaluate common python code over "image" and "exf" vars.',
+                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_ev.set_defaults(func=ev)
+    parser_ev.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_ev.add_argument('-c', '--code', help='Custom (python) code.', type=str, default='print(image.size)')
+
+    parser_border = subparsers.add_parser('border', description='Add border to image.',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_border.set_defaults(func=border)
+    parser_border.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_border.add_argument('--width', '-wi', help='Border width.', type=int, default=1)
+    parser_border.add_argument('--color', '-c', help='Border color.', type=str, default='white')
+    parser_border.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    parser_optimize = subparsers.add_parser('optimize', description='Optimize JPG compression.',
+                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_optimize.set_defaults(func=optimize)
+    parser_optimize.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_optimize.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    parser_rename = subparsers.add_parser('rename', description='''Rename image using pattern. You can use timestamp
+                                          pattern and original name.''',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_rename.set_defaults(func=rename)
+    parser_rename.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_rename.add_argument('--pattern', '-p', help='Rename pattern', type=str,
+                               default='%Y_%m_%dT%H_%M_%S-ORIG_NAME.JPG')
+    parser_rename.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    args = vars(parser.parse_args())
+    if 'func' in args:
+        func = args.pop('func')
+        func(**args)
     else:
+        parser.print_help()
+
+
+def gray(files: list, overwrite: bool):
+    for i, src_file in enumerate(files):
+        image, exf = imread(src_file)
+        if overwrite:
+            out_file = src_file
+        else:
+            path_base, ext = os.path.splitext(src_file)
+            out_file = '%s_gray%s' % (path_base, ext)
+        print(src_file, '-->', out_file, 'graying ...')
+        image_gray = ImageOps.grayscale(image)
+        imwrite(image_gray, out_file, exf)
+
+
+def stack(files: list, output: str, vertical: bool):
+    if not output:
+        output = '-'.join(files)
+    ims = [np.asarray(imread(im)[0], dtype=np.uint8) for im in files]
+    if vertical:
         i_shape = 1
         i_axis = 0
+    else:
+        i_shape = 0
+        i_axis = 1
     sizes = [im.shape[i_shape] for im in ims]
     i_max = sizes.index(max(sizes))
     for i, im in enumerate(ims):
@@ -64,28 +177,19 @@ def stack(input, output, horizontal):
             new_shape_list[i_axis] = ims[i_max].shape[i_shape]
             img = img.resize(tuple(new_shape_list))
             ims[i] = np.asarray(img, dtype=np.uint8)
-    print(', '.join(input), '-->', output, 'joining ...')
+    print(', '.join(files), '-->', output, 'joining ...')
     stacked_img = np.concatenate(tuple(ims), i_axis)
     imwrite(Image.fromarray(stacked_img), output)
 
 
-im_cmd.add_command(stack)
-
-
-@click.command(help='Resize image to inserted size (higher dimension).')
-@click.argument('input', nargs=-1)
-@click.option('--output', '-o', help='Path to output image.', multiple=True, default=None)
-@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
-@click.option('--size', '-s', help='Higher dimension output size (1000 by default).', type=int, default=1000)
-@click.option('--width', '-wi', help='Width.', type=int, default=0)
-@click.option('--height', '-h', help='Height.', type=int, default=0)
-def resize(input, output, overwrite, size, width, height):
-    if not output:
-        output = [append_postfix(m, '_resized') for m in input]
-    if overwrite:
-        output = input
-    for i, m_input in enumerate(input):
-        print(m_input, '-->', output[i], 'resizing ...')
+def resize(files: list, overwrite: bool, size: int, width: int, height: int):
+    for m_input in files:
+        if overwrite:
+            out_file = m_input
+        else:
+            path_base, ext = os.path.splitext(m_input)
+            out_file = '%s_gray%s' % (path_base, ext)
+        print(m_input, '-->', out_file, 'resizing ...')
         image, exf = imread(m_input)
         if width > 0:
             image2 = image.resize((width, height))
@@ -93,10 +197,7 @@ def resize(input, output, overwrite, size, width, height):
             f = size / max(image.size)
             w, h = image.size
             image2 = image.resize((int(f * w), int(f * h)))
-        imwrite(image2, output[i], exf)
-
-
-im_cmd.add_command(resize)
+        imwrite(image2, out_file, exf)
 
 
 def _remove_exif(m_input: str):
@@ -118,21 +219,16 @@ def _add_image_description(src: str, comment: str, overwrite: bool):
     imwrite(image, out_file, exf)
 
 
-@click.command(help='Exif manipulation command.')
-@click.argument('input', nargs=-1)
-@click.option('--remove', '-r', help='Remove exif info from image.', is_flag=True)
-@click.option('--comment', '-c', help='Comment.', type=str, default=None)
-@click.option('--overwrite', help='Overwrite input images.', is_flag=True)
-def exif(input, remove, comment, overwrite):
+def exif(files: list, remove: bool, comment: str, overwrite: bool):
     if remove:
         pool = mp.Pool(mp.cpu_count())
-        pool.map(_remove_exif, input)
+        pool.map(_remove_exif, files)
         pool.close()
     elif comment is not None:
         with mp.Pool(mp.cpu_count()) as pool:
-            pool.map(partial(_add_image_description, comment=comment, overwrite=overwrite), input)
+            pool.map(partial(_add_image_description, comment=comment, overwrite=overwrite), files)
     else:
-        for i, m_input in enumerate(input):
+        for i, m_input in enumerate(files):
             image, exf = imread(m_input)
             for id, desc in piexif.TAGS['Exif'].items():
                 if desc['name'] == 'MakerNote':  # exclude this long value
@@ -144,139 +240,93 @@ def exif(input, remove, comment, overwrite):
                     print(f"{desc['name']}: {exf['0th'][id]}")
 
 
-im_cmd.add_command(exif)
-
-
-@click.command(help='Rotate image according to exif orientation\
- info or by 90 degrees in the counter-clockwise direction.')
-@click.argument('input', nargs=-1)
-@click.option('--output', '-o', help='Path to output image.', multiple=True, default=None)
-@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
-@click.option('--k', '-k', help='Number of times the array is rotated by 90 degrees.', type=int, default=None)
-def rotate(input, output, overwrite, k):
-    if not output:
-        output = [append_postfix(m, '_rotated') for m in input]
-    if overwrite:
-        output = input
-    for i, m_input in enumerate(input):
-        print(m_input, '-->', output[i], 'rotating ...')
+def rotate(files: list, overwrite: bool):
+    for i, m_input in enumerate(files):
+        if overwrite:
+            out_file = m_input
+        else:
+            path_base, ext = os.path.splitext(m_input)
+            out_file = '%s_rotated%s' % (path_base, ext)
+        print(m_input, '-->', out_file, 'rotating ...')
         try:
             image, exf = imread(m_input)
             _, image, exf = try_rot_exif(image, exf)
-            imwrite(image, output[i], exf)
+            imwrite(image, out_file, exf)
         except BaseException:
             print('Error processing image %s:', m_input)
             traceback.print_exception(*sys.exc_info())
 
 
-im_cmd.add_command(rotate)
-
-
-@click.command(help='Crop image using [x, y, width, height] window.')
-@click.argument('input', nargs=-1)
-@click.option('--output', '-o', help='Path to output image.', multiple=True, default=None)
-@click.option('--x', '-x', help='Upper left crop window corner x coordinate.', default=0)
-@click.option('--y', '-y', help='Upper left crop window corner y coordinate.', default=0)
-@click.option('--width', '-w', help='Crop window width.', type=int)
-@click.option('--height', '-h', help='Crop window height.', type=int)
-@click.option('--overwrite', help='Overwrite input images.', is_flag=True)
-def crop(input, output, x, y, width, height, overwrite):
-    if not output:
-        output = [append_postfix(m, '_crop') for m in input]
-    if overwrite:
-        output = input
-    print(output)
-    for i, m_input in enumerate(input):
-        print(m_input, '-->', output[i], 'croping ...')
+def crop(files: list, x: int, y: int, width: int, height: int, overwrite: bool):
+    for m_input in files:
+        if overwrite:
+            out_file = m_input
+        else:
+            path_base, ext = os.path.splitext(m_input)
+            out_file = '%s_cropped%s' % (path_base, ext)
+        print(m_input, '-->', out_file, 'croping ...')
         image, exf = imread(m_input)
         image = np.asarray(image, dtype=np.uint8)
+        print(y, height, x, width)
         image2 = image[y:y+height, x:x+width, :]
-        imwrite(Image.fromarray(image2), output[i], exf)
+        imwrite(Image.fromarray(image2), out_file, exf)
 
 
-im_cmd.add_command(crop)
-
-
-@click.command(help='Filter input images using given criterion.')
-@click.argument('input', nargs=-1)
-@click.option('--criterion', '-c', help='Images filtering criterion (python syntax, f.e.: \'w * h > 100\').')
-def filter(input, criterion):
-    for m_input in input:
+def filter(files: list, criterion: str):
+    for m_input in files:
         image, exf = imread(m_input)
         image = np.asarray(image, dtype=np.uint8)
         shape = image.shape
         h, w, _ = shape
         criteria_satisfied = eval(criterion)
         if criteria_satisfied:
-            click.echo(m_input)
+            print(m_input)
 
 
-im_cmd.add_command(filter)
-
-
-def _convert(input: str, extension: str, overwrite: bool):
+def _convert(m_input: str, extension: str, overwrite: bool):
     try:
-        image, exf = imread(input)
+        image, exf = imread(m_input)
         image = np.asarray(image, dtype=np.uint8)
-        path_base, ext = os.path.splitext(input)
+        path_base, ext = os.path.splitext(m_input)
         new_file_path = path_base + extension
-        print('%s --> %s' % (input, new_file_path))
+        print('%s --> %s' % (m_input, new_file_path))
         imwrite(Image.fromarray(image), new_file_path)
         if overwrite:
-            os.remove(input)
+            os.remove(m_input)
     except Exception as e:
-        print('Error conversion %s:' % input, e)
+        print('Error conversion %s:' % m_input, e)
 
 
-@click.command(help='Convert image to another format.')
-@click.argument('input', nargs=-1)
-@click.option('--extension', '-e', help='Required new image extension, f.e.: \'.png\'.')
-@click.option('--overwrite', '-w', help='Overwrite image (remove old one).', is_flag=True)
-def convert(input, extension, overwrite):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_convert, extension=extension, overwrite=overwrite), input)
-    pool.close()
+def convert(files: list, extension: str, overwrite: bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_convert, extension=extension, overwrite=overwrite), files)
 
 
-im_cmd.add_command(convert)
-
-
-def _gauss(input: str, std_dev: int):
-    image, exf = imread(input)
+def _gauss(m_input: str, std_dev: int, overwrite: bool):
+    if overwrite:
+        out_file = m_input
+    else:
+        path_base, ext = os.path.splitext(m_input)
+        out_file = '%s_gaussed%s' % (path_base, ext)
+    print('%s --> %s' % (m_input, out_file))
+    image, exf = imread(m_input)
     image = np.asarray(image, dtype=np.uint8)
     noise = np.random.normal(0, std_dev, image.shape)
     image = image + noise
     image -= image.min()
     image /= (image.max() / 255.0)
     image = image.astype(np.uint8)
-    path_base, ext = os.path.splitext(input)
-    new_file_path = '%s_gauss%d%s' % (path_base, std_dev, ext)
-    print('%s --> %s' % (input, new_file_path))
-    imwrite(Image.fromarray(image), new_file_path)
+    imwrite(Image.fromarray(image), out_file)
 
 
-@click.command(help='Generate image with Gauss noise.')
-@click.argument('input', nargs=-1)
-@click.option('--std-dev', '-s', help='Standard deviation.', type=int)
-def gauss(input, std_dev):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_gauss, std_dev=std_dev), input)
-    pool.close()
+def gauss(files: list, std_dev: float, overwrite: bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_gauss, std_dev=std_dev, overwrite=overwrite), files)
 
 
-im_cmd.add_command(gauss)
-
-
-@click.command(help='Show image(s) - terminal view.')
-@click.argument('images', nargs=-1)
-@click.option('--slideshow', '-s', help='Run as slideshow.', is_flag=True)
-@click.option('--timeout', '-t', help='Slideshow timeout (s).', type=int, default=1)
-def show(images: list, slideshow: bool, timeout: int):
+def show(files: list, slideshow: bool, timeout: int):
     d = CursesDisplay(slideshow, timeout)
-    d.run(images)
-
-
-im_cmd.add_command(show)
+    d.run(files)
 
 
 def _find_ext(src: str, append: bool):
@@ -285,25 +335,18 @@ def _find_ext(src: str, append: bool):
         fmt = img.format
         if append:
             ext = 'jpg' if fmt == 'JPEG' else fmt.lower()  # Use jpg extension, not jpeg.
-            dst = '%s.%s' % (src, ext)
+            dst = f'{src}.{ext}'
             shutil.move(src, dst)
             print('%s --> %s' % (src, dst))
         else:
-            print('%s format: %s' % fmt)
+            print(f'{src} format: {fmt}')
     except Exception as e:
         print('Image %s: %s' % (src, e))
 
 
-@click.command(help='Find correct image extension.')
-@click.argument('srcs', nargs=-1)
-@click.argument('input', nargs=-1)
-def find_ext(srcs: str, append=bool):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_find_ext, append=append), srcs)
-    pool.close()
-
-
-im_cmd.add_command(find_ext)
+def find_ext(files: list, append=bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_find_ext, append=append), files)
 
 
 def _find_noim(src: str, delete: bool):
@@ -317,54 +360,36 @@ def _find_noim(src: str, delete: bool):
             print('Image %s: %s' % (src, e))
 
 
-@click.command(help='Find non-image files.')
-@click.argument('srcs', nargs=-1)
-@click.option('--delete', '-d', help='Delete found non-image files.', is_flag=True)
-def find_noim(srcs: str, delete=bool):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_find_noim, delete=delete), srcs)
-    pool.close()
+def find_noim(files: list, delete=bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_find_noim, delete=delete), files)
 
 
-im_cmd.add_command(find_noim)
-
-
-@click.command(help='Evaluate common code over image.')
-@click.argument('input', nargs=-1)
-@click.option('-c', '--code', help='Custom code, f.e.: \'print(image.size)\'.', type=str, default='print(image.size)')
-def ev(input, code: str):
-    for i, m_input in enumerate(input):
+def ev(files: list, code: str):
+    for i, m_input in enumerate(files):
         image, exf = imread(m_input)
         eval(code)
 
 
-im_cmd.add_command(ev)
-
-
-def _border(src: str, width: int, color: str):
-    image, exf = imread(src)
+def _border(m_input: str, width: int, color: str, overwrite: bool):
+    if overwrite:
+        out_file = m_input
+    else:
+        path_base, ext = os.path.splitext(m_input)
+        out_file = '%s_border%s' % (path_base, ext)
+    print('%s --> %s' % (m_input, out_file))
+    image, exf = imread(m_input)
     image = ImageOps.expand(image, border=width, fill=color)
-    path_base, ext = os.path.splitext(src)
-    new_file_path = '%s_border%s' % (path_base, ext)
-    print('%s --> %s' % (src, new_file_path))
-    imwrite(image, new_file_path, exf)
+    imwrite(image, out_file, exf)
 
 
-@click.command(help='Add border to image.')
-@click.argument('srcs', nargs=-1)
-@click.option('--width', '-w', help='Border width.', type=int, default=1)
-@click.option('--color', '-c', help='Border color.', type=str, default='white')
-def border(srcs: str, width: int, color: str):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_border, width=width, color=color), srcs)
-    pool.close()
+def border(files: list, width: int, color: str, overwrite: bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_border, width=width, color=color, overwrite=overwrite), files)
 
 
-im_cmd.add_command(border)
-
-
-def bytes2megabytes(bytes) -> float:
-    return bytes / float(1 << 20)
+def bytes2megabytes(n_bytes: float) -> float:
+    return n_bytes / float(1 << 20)
 
 
 def _optimize(src: str, overwrite: bool):
@@ -382,16 +407,9 @@ def _optimize(src: str, overwrite: bool):
           % (bytes2megabytes(orig_size), bytes2megabytes(new_size), 100.0 * (orig_size - new_size) / orig_size))
 
 
-@click.command(help='Optimize JPG compression.')
-@click.argument('srcs', nargs=-1)
-@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
-def optimize(srcs: str, overwrite: bool):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_optimize, overwrite=overwrite), srcs)
-    pool.close()
-
-
-im_cmd.add_command(optimize)
+def optimize(files: list, overwrite: bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_optimize, overwrite=overwrite), files)
 
 
 def _rename(src: str, pattern: str, overwrite: bool):
@@ -420,14 +438,6 @@ def _rename(src: str, pattern: str, overwrite: bool):
         traceback.print_exception(*sys.exc_info())
 
 
-@click.command(help='Rename image using pattern. You can use timestamp pattern and original name.')
-@click.argument('srcs', nargs=-1)
-@click.option('--pattern', '-p', help='Rename pattern (e.g.: %Y_%m_%dT%H_%M_%S-ORIG_NAME.JPG.', type=str)
-@click.option('--overwrite', '-w', help='Overwrite input images.', is_flag=True)
-def rename(srcs: str, pattern: str, overwrite: bool):
-    pool = mp.Pool(mp.cpu_count())
-    pool.map(partial(_rename, pattern=pattern, overwrite=overwrite), srcs)
-    pool.close()
-
-
-im_cmd.add_command(rename)
+def rename(files: str, pattern: str, overwrite: bool):
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.map(partial(_rename, pattern=pattern, overwrite=overwrite), files)

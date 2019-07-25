@@ -21,10 +21,10 @@ pip install .
 Application is used using command line with `im` command.
 
 ### Help option
-Use `--help` option for global help and subcommands:
+Use `-h` or `--help` option for global help and subcommands:
 ~~~bash
-im --help
-im resize --help
+im -h
+im resize -h
 ~~~
 
 Help:
@@ -34,7 +34,7 @@ Usage: im [OPTIONS] COMMAND [ARGS]...
   Image manipulation tool.
 
 Options:
-  --help  Show this message and exit.
+  --help,-h  Show this message and exit.
 
 Commands:
   border     Add border to image.
@@ -130,5 +130,4 @@ All dependencies are standard pip installable packages. They are automatically i
 
 * [Pillow](https://python-pillow.org/) - _Image manipulation package._
 * [Numpy](http://www.numpy.org/) - _Matrix processing package._
-* [Click](http://click.pocoo.org/5/) - _CLI helper package._
 * [Piexif](http://piexif.readthedocs.io/en/latest/) - _EXIF data processing package._

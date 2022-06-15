@@ -14,9 +14,16 @@ def imread(filepath):
 
 def imwrite(image, filename, exif=None):
     if exif:
+        _try_fix_exif(exif)
         image.save(filename, exif=piexif.dump(exif))
     else:
         image.save(filename)
+
+
+def _try_fix_exif(exif):
+    # workaround taken from https://github.com/hMatoba/Piexif/issues/95
+    if 41729 in exif['Exif'] and isinstance(exif['Exif'][41729], int):
+        exif['Exif'][41729] = str(exif['Exif'][41729]).encode()
 
 
 def try_rot_exif(image, exf):

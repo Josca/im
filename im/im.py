@@ -18,12 +18,14 @@ def im_cmd():
     subparsers = parser.add_subparsers()
 
     parser_gray = subparsers.add_parser('gray', description='Convert image to grayscale.',
+                                        help='Convert image to grayscale.',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser_gray.set_defaults(func=gray)
+    parser_gray.set_defaults(func=gray, help="Convert image to grayscale")
     parser_gray.add_argument('files', metavar='FILE', nargs='+', type=str)
     parser_gray.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_stack = subparsers.add_parser('stack', description='Join images horizontally or vertically.',
+                                         help='Join images horizontally or vertically.',
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_stack.set_defaults(func=stack)
     parser_stack.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -31,6 +33,7 @@ def im_cmd():
     parser_stack.add_argument('--output', '-o', help='Path to output image.', default=None)
 
     parser_resize = subparsers.add_parser('resize', description='Resize image to inserted size (higher dimension).',
+                                          help='Resize image to inserted size (higher dimension).',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_resize.set_defaults(func=resize)
     parser_resize.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -40,6 +43,7 @@ def im_cmd():
     parser_resize.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_exif = subparsers.add_parser('exif', description='Exif manipulation command.',
+                                        help='Exif manipulation command.',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_exif.set_defaults(func=exif)
     parser_exif.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -48,12 +52,14 @@ def im_cmd():
     parser_exif.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_rotate = subparsers.add_parser('rotate', description='Rotate image according to exif data',
+                                          help='Rotate image according to exif data',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_rotate.set_defaults(func=rotate)
     parser_rotate.add_argument('files', metavar='FILE', nargs='+', type=str)
     parser_rotate.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_crop = subparsers.add_parser('crop', description='Crop image using [x, y, width, height] window.',
+                                        help='Crop image using [x, y, width, height] window.',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_crop.set_defaults(func=crop)
     parser_crop.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -64,6 +70,7 @@ def im_cmd():
     parser_crop.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_filter = subparsers.add_parser('filter', description='Filter input images using given criterion.',
+                                          help='Filter input images using given criterion.',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_filter.set_defaults(func=filter)
     parser_filter.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -71,6 +78,7 @@ def im_cmd():
                                bool value''', default='w * h > 100')
 
     parser_convert = subparsers.add_parser('convert', description='Convert image to another format.',
+                                           help='Convert image to another format.',
                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_convert.set_defaults(func=convert)
     parser_convert.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -78,6 +86,7 @@ def im_cmd():
     parser_convert.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_gauss = subparsers.add_parser('gauss', description='Generate image with Gauss noise.',
+                                         help='Generate image with Gauss noise.',
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_gauss.set_defaults(func=gauss)
     parser_gauss.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -85,6 +94,7 @@ def im_cmd():
     parser_gauss.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_show = subparsers.add_parser('show', description='Show image(s) - terminal view.',
+                                        help='Show image(s) - terminal view.',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_show.set_defaults(func=show)
     parser_show.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -92,25 +102,28 @@ def im_cmd():
     parser_show.add_argument('--timeout', '-t', help='Slideshow timeout (s).', type=int, default=1)
 
     parser_findext = subparsers.add_parser('findext', description='Find correct image extension.',
+                                           help='Find correct image extension.',
                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_findext.set_defaults(func=find_ext)
     parser_findext.add_argument('files', metavar='FILE', nargs='+', type=str)
     parser_findext.add_argument('--append', '-a', help='Append extension to file.', action='store_true')
 
-    parser_find_no_img = subparsers.add_parser('find_noim', description='''Find non-image files and (optionally)
-                                               remove it.''',
+    parser_find_no_img = subparsers.add_parser('find_noim', description='Find non-image files and (optionally) remove it.',
+                                               help='Find non-image files and (optionally) remove it.',
                                                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_find_no_img.set_defaults(func=find_noim)
     parser_find_no_img.add_argument('files', metavar='FILE', nargs='+', type=str)
     parser_find_no_img.add_argument('--delete', '-d', help='Delete found non-image files.', action='store_true')
 
     parser_ev = subparsers.add_parser('ev', description='Evaluate common python code over "image" and "exf" vars.',
+                                      help='Evaluate common python code over "image" and "exf" vars.',
                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_ev.set_defaults(func=ev)
     parser_ev.add_argument('files', metavar='FILE', nargs='+', type=str)
     parser_ev.add_argument('-c', '--code', help='Custom (python) code.', type=str, default='print(image.size)')
 
     parser_border = subparsers.add_parser('border', description='Add border to image.',
+                                          help='Add border to image.',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_border.set_defaults(func=border)
     parser_border.add_argument('files', metavar='FILE', nargs='+', type=str)
@@ -119,12 +132,14 @@ def im_cmd():
     parser_border.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_optimize = subparsers.add_parser('optimize', description='Optimize JPG compression.',
+                                            help='Optimize JPG compression.',
                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_optimize.set_defaults(func=optimize)
     parser_optimize.add_argument('files', metavar='FILE', nargs='+', type=str)
     parser_optimize.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     parser_rename = subparsers.add_parser('rename', description='''Rename image using pattern. You can use timestamp
+                                          pattern and original name.''', help='''Rename image using pattern. You can use timestamp
                                           pattern and original name.''',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_rename.set_defaults(func=rename)

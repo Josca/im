@@ -12,7 +12,7 @@ setup(
     install_requires=[
         'numpy>=1.11.1',
         'Pillow>=11.1.0',
-        'piexif>=1.0.4'
+        'piexif>=1.1.3'
     ],
     entry_points='''
         [console_scripts]

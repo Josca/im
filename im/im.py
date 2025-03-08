@@ -148,6 +148,12 @@ def im_cmd():
                                default='%Y_%m_%dT%H_%M_%S-ORIG_NAME.JPG')
     parser_rename.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
+    info_help = "Show info about input image (size, exif, ...)"
+    parser_info = subparsers.add_parser('info', description=info_help, help=info_help,
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_info.set_defaults(func=info)
+    parser_info.add_argument('files', metavar='FILE', nargs='+', type=str)
+
     args = vars(parser.parse_args())
     if 'func' in args:
         func = args.pop('func')
@@ -234,6 +240,20 @@ def _add_image_description(src: str, comment: str, overwrite: bool):
     imwrite(image, out_file, exf)
 
 
+def _exif_show(exf: dict):
+    if not exf:
+        print("No exif data found")
+        return
+    for id, desc in piexif.TAGS['Exif'].items():
+        if desc['name'] == 'MakerNote':  # exclude this long value
+            continue
+        if id in exf['Exif']:
+            print(f"{desc['name']}: {exf['Exif'][id]}")
+    for id, desc in piexif.TAGS['Image'].items():
+        if id in exf['0th']:
+            print(f"{desc['name']}: {exf['0th'][id]}")
+
+
 def exif(files: list, remove: bool, comment: str, overwrite: bool):
     if remove:
         pool = mp.Pool(mp.cpu_count())
@@ -245,14 +265,7 @@ def exif(files: list, remove: bool, comment: str, overwrite: bool):
     else:
         for i, m_input in enumerate(files):
             image, exf = imread(m_input)
-            for id, desc in piexif.TAGS['Exif'].items():
-                if desc['name'] == 'MakerNote':  # exclude this long value
-                    continue
-                if id in exf['Exif']:
-                    print(f"{desc['name']}: {exf['Exif'][id]}")
-            for id, desc in piexif.TAGS['Image'].items():
-                if id in exf['0th']:
-                    print(f"{desc['name']}: {exf['0th'][id]}")
+            _exif_show(exf)
 
 
 def rotate(files: list, overwrite: bool):
@@ -456,3 +469,16 @@ def _rename(src: str, pattern: str, overwrite: bool):
 def rename(files: str, pattern: str, overwrite: bool):
     with mp.Pool(mp.cpu_count()) as pool:
         pool.map(partial(_rename, pattern=pattern, overwrite=overwrite), files)
+
+def _info(src: str):
+    image, exf = imread(src)
+    print("Data info:")
+    print(f"- Size (width, height): {image.size}")
+    print(f"- Mode: {image.mode}")
+    print("Exif info:")
+    _exif_show(exf)
+
+
+def info(files: list):
+    for file in files:
+        _info(file)

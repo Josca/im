@@ -103,7 +103,7 @@ class CursesDisplay:
             f = min((dw - 1) / i_w, (dh - 1) / i_h)
             new_w = int(f * i_w)
             new_h = int(f * i_h)
-            image = image.resize((new_w, new_h), Image.ANTIALIAS)
+            image = image.resize((new_w, new_h))
             image = image.convert('P', palette=Image.ADAPTIVE, colors=253)
             image = image.convert('RGB')
             pxs = image.load()

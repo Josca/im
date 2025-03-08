@@ -209,7 +209,7 @@ def resize(files: list, overwrite: bool, size: int, width: int, height: int):
             out_file = m_input
         else:
             path_base, ext = os.path.splitext(m_input)
-            out_file = '%s_gray%s' % (path_base, ext)
+            out_file = '%s_resized%s' % (path_base, ext)
         print(m_input, '-->', out_file, 'resizing ...')
         image, exf = imread(m_input)
         if width > 0:

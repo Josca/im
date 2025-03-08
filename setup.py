@@ -11,7 +11,7 @@ setup(
     keywords=['image', 'viewer', 'crop', 'convert', 'optimize jpeg'],
     install_requires=[
         'numpy>=1.11.1',
-        'Pillow>=3.2.0',
+        'Pillow>=11.1.0',
         'piexif>=1.0.4'
     ],
     entry_points='''

@@ -10,7 +10,7 @@ setup(
     url='https://github.com/Josca/im',
     keywords=['image', 'viewer', 'crop', 'convert', 'optimize jpeg'],
     install_requires=[
-        'numpy>=1.11.1',
+        'numpy>=2.0.2',
         'Pillow>=11.1.0',
         'piexif>=1.1.3'
     ],

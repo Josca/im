@@ -6,7 +6,7 @@ import traceback
 from datetime import datetime
 import argparse
 
-from PIL import ImageOps
+from PIL import ImageOps, Image
 import multiprocessing as mp
 
 from im.display import CursesDisplay
@@ -215,9 +215,12 @@ def resize(files: list, overwrite: bool, size: int, width: int, height: int):
         if width > 0:
             image2 = image.resize((width, height))
         else:
+            resample = Image.BICUBIC # default
             f = size / max(image.size)
+            if f < 1.0:
+                resample = Image.LANCZOS
             w, h = image.size
-            image2 = image.resize((int(f * w), int(f * h)))
+            image2 = image.resize((int(f * w), int(f * h)), resample)
         imwrite(image2, out_file, exf)
 
 

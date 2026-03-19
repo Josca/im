@@ -14,6 +14,9 @@ setup(
         'Pillow>=11.1.0',
         'piexif>=1.1.3'
     ],
+    extras_require={
+        'test': ['pytest', 'ruff'],
+    },
     entry_points='''
         [console_scripts]
         im=im.im:im_cmd

@@ -1,0 +1,32 @@
+[tool.ruff]
+target-version = "py310"
+exclude = ["build"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "PIE",  # flake8-pie
+]
+ignore = [
+    "E501",   # line too long (let formatter handle it)
+    "E722",   # bare except (used intentionally for image loading fallbacks)
+    "E741",   # ambiguous variable name (i, l, etc. are fine here)
+    "B007",   # unused loop variable
+    "F403",   # star imports (used intentionally for utils)
+    "F405",   # names from star imports (consequence of F403)
+    "SIM105", # use contextlib.suppress (not always clearer)
+    "SIM108", # ternary operator (not always clearer)
+    "UP031",  # printf string formatting (existing style)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

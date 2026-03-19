@@ -1,6 +1,6 @@
 import numpy as np
-from PIL import Image
 import piexif
+from PIL import Image
 
 
 def imread(filepath):

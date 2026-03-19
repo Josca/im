@@ -188,7 +188,7 @@ def stack(files: list, output: str, vertical: bool):
     sizes = [im.shape[i_shape] for im in ims]
     i_max = sizes.index(max(sizes))
     for i, im in enumerate(ims):
-        if i is not i_max:
+        if i != i_max:
             f = ims[i_max].shape[i_shape] / im.shape[i_shape]
             img = Image.fromarray(ims[i])
             h, w = list(ims[i].shape)[:2]

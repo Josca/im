@@ -51,6 +51,14 @@ def im_cmd():
     parser_exif.add_argument('--comment', '-c', help='Comment.', type=str, default=None)
     parser_exif.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
+    parser_flip = subparsers.add_parser('flip', description='Flip image horizontally or vertically.',
+                                        help='Flip image horizontally or vertically.',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_flip.set_defaults(func=flip)
+    parser_flip.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_flip.add_argument('--vertical', '-v', help='Flip vertically (top to bottom).', action='store_true')
+    parser_flip.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
     parser_rotate = subparsers.add_parser('rotate', description='Rotate image according to exif data',
                                           help='Rotate image according to exif data',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -269,6 +277,22 @@ def exif(files: list, remove: bool, comment: str, overwrite: bool):
         for i, m_input in enumerate(files):
             image, exf = imread(m_input)
             _exif_show(exf)
+
+
+def flip(files: list, vertical: bool, overwrite: bool):
+    for m_input in files:
+        if overwrite:
+            out_file = m_input
+        else:
+            path_base, ext = os.path.splitext(m_input)
+            out_file = '%s_flipped%s' % (path_base, ext)
+        print(m_input, '-->', out_file, 'flipping ...')
+        image, exf = imread(m_input)
+        if vertical:
+            image = ImageOps.flip(image)
+        else:
+            image = ImageOps.mirror(image)
+        imwrite(image, out_file, exf)
 
 
 def rotate(files: list, overwrite: bool):

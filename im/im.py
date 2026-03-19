@@ -1,13 +1,13 @@
+import argparse
+import multiprocessing as mp
 import os
-from functools import partial
 import shutil
 import sys
 import traceback
 from datetime import datetime
-import argparse
+from functools import partial
 
-from PIL import ImageOps, Image
-import multiprocessing as mp
+from PIL import Image, ImageOps
 
 from im.display import CursesDisplay
 from im.utils import *

@@ -125,6 +125,15 @@ im gray lena.jpg
 - Overwrite original file (be careful), using `-w`.
 - Use batch processing, using list of images (or globing), `im gray *.jpg`.
 
+## Development
+
+Run lint and tests locally:
+~~~bash
+pip install -e ".[test]"
+ruff check im/ tests/
+pytest tests/ -v
+~~~
+
 ## <a name="deps"></a>Dependencies
 All dependencies are standard pip installable packages. They are automatically installed with setup script.
 

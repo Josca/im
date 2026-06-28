@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime
 from functools import partial
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 from im.display import CursesDisplay
 from im.utils import *
@@ -155,6 +155,13 @@ def im_cmd():
     parser_rename.add_argument('--pattern', '-p', help='Rename pattern', type=str,
                                default='%Y_%m_%dT%H_%M_%S-ORIG_NAME.JPG')
     parser_rename.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
+
+    gs_print_help = "Prepare image for grayscale laser printing."
+    parser_gs_print = subparsers.add_parser('gs_print', description=gs_print_help, help=gs_print_help,
+                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_gs_print.set_defaults(func=gs_print)
+    parser_gs_print.add_argument('files', metavar='FILE', nargs='+', type=str)
+    parser_gs_print.add_argument('--overwrite', '-w', help='Overwrite input images.', action='store_true')
 
     info_help = "Show info about input image (size, exif, ...)"
     parser_info = subparsers.add_parser('info', description=info_help, help=info_help,
@@ -509,3 +516,20 @@ def _info(src: str):
 def info(files: list):
     for file in files:
         _info(file)
+
+
+def gs_print(files: list, overwrite: bool):
+    for m_input in files:
+        if overwrite:
+            out_file = m_input
+        else:
+            path_base, ext = os.path.splitext(m_input)
+            out_file = '%s_print%s' % (path_base, ext)
+        print(m_input, '-->', out_file, 'preparing for print ...')
+        image, exf = imread(m_input)
+        image = image.convert("L")
+        image = ImageEnhance.Contrast(image).enhance(1.4)
+        image = ImageEnhance.Brightness(image).enhance(1.1)
+        image = ImageEnhance.Sharpness(image).enhance(1.5)
+        image = image.filter(ImageFilter.UnsharpMask(radius=2, percent=100, threshold=3))
+        imwrite(image, out_file)
